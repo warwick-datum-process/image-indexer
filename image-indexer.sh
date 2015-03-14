@@ -53,6 +53,7 @@ database=$run_dir/image.db
 database_copy=$run_dir/image-read.db
 dd='\([0-9#][0-9#]\)'
 seconds_to_pause_between_each_photo=12
+aws_s3_upload_rate_kBps=64
 
 
 ##  SIGNAL HANDLING  ##
@@ -308,7 +309,7 @@ do
         # Upload to AWS S3 bucket.
         if ! s3cmd info s3://warwick-wendy-allen--photos/$canoncical_name 2>/dev/null
         then
-            cmd="s3cmd put -P $path_copy s3://warwick-wendy-allen--photos/$canoncical_name"
+            cmd="trickle $verbose -u$aws_s3_upload_rate_kBps s3cmd put -P $path_copy s3://warwick-wendy-allen--photos/$canoncical_name"
             if [ $verbose ]
             then
                 echo "
