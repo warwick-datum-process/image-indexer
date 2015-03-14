@@ -30,8 +30,8 @@ repository and record the two files containing the image: i.e., the original
 file and the file copied into the repository.  The extracted EXIF tags are also
 stored in the database.
 
-Send the process a hang-up (1) or interrupt (2) signal to request it to stop
-when it has finished process the current file.
+Send the process a hang-up (1), interrupt (2) or quit (3) signal to request it
+to stop when it has finished process the current file.
 '
     exit
 fi
@@ -53,33 +53,38 @@ database=$run_dir/image.db
 database_copy=$run_dir/image-read.db
 dd='\([0-9#][0-9#]\)'
 seconds_to_pause_between_each_photo=12
-aws_s3_upload_rate_kBps=64
+aws_s3_upload_rate_kBps=32
 
 
 ##  SIGNAL HANDLING  ##
 
 stop_msg=
 
+function trap_with_arg()
+{
+    func="$1" ; shift
+    for sig ; do
+        trap "$func $sig" "$sig"
+    done
+}
+
+trap_with_arg stopRequested SIGHUP SIGINT SIGQUIT
+
 function stopRequested()
 {
     stop_msg="SIGHUP or SIGINT received: This script will stop once the current file has been processed."
     if [ $verbose ]; then echo $stop_msg; fi
-    echo "Signal $1 reeived." 1>&2
+    echo "Signal $1 received." 1>&2
 }
-
-trap stopRequested SIGHUP SIGINT
 
 function stopIfRequested()
 {
     if [ ! -z "$stop_msg" ]
     then
         echo "Stopping in response to a SIGHUP or SIGINT."
+        copyDatabase
         exit 0
     fi
-    for table in process_queue image file
-    do
-        dbDo "SELECT COUNT(*) FROM process_queue;"
-    done
 }
 
 
@@ -147,6 +152,34 @@ function isVideo() {
      [[ "$source_path" =~ \.[Mm][Oo][Vv]$ ]]
 }
 
+function copyDatabase()
+{
+    cp $verbose $database $database_copy
+    i=5
+    j=$(($j - 1))
+    if [[ $j = 0 ]]
+    then
+        if [ $vebose ]
+        then
+            ls -ltsdr --color=tty image*.db*;
+        fi
+        if [ -e "$backup" ]
+        then
+            nice bzip2 $verbose $backup &
+        fi
+        backup=$database.$(date +%Y%m%d-%H%M)
+        cp $verbose $database_copy $backup
+        j=15
+    fi
+    if [ $verbose ]
+    then
+        date
+        echo 'SELECT "Queue: ", COUNT(*) FROM process_queue; SELECT "Images:", COUNT(*) FROM image; SELECT "Files: ", COUNT(*) FROM file; SELECT "Tags:  ", COUNT(*) FROM tag;' | sqlite -separator ' | ' $database_copy
+        echo 'SELECT * FROM process_queue LIMIT 2;' | sqlite $database_copy
+        sleep 6;
+    fi
+}
+
 
 ##  SET-UP  ##
 
@@ -211,30 +244,7 @@ do
     i=$(($i - 1))
     if [[ $i == 0 ]]
     then
-        cp $database $database_copy
-        i=5
-        j=$(($j - 1))
-        if [[ $j = 0 ]]
-        then
-            if [ $vebose ]
-            then
-                ls -ltsdr --color=tty image*.db*;
-            fi
-            if [ -e "$backup" ]
-            then
-                nice bzip2 $verbose $backup &
-            fi
-            backup=$database.$(date +%Y%m%d-%H%M)
-            cp $database_copy $backup
-            j=15
-        fi
-        if [ $verbose ]
-        then
-            date
-            echo 'SELECT "Queue: ", COUNT(*) FROM process_queue; SELECT "Images:", COUNT(*) FROM image; SELECT "Files: ", COUNT(*) FROM file; SELECT "Tags:  ", COUNT(*) FROM tag;' | sqlite -separator ' | ' $database_copy
-            echo 'SELECT * FROM process_queue LIMIT 2;' | sqlite $database_copy
-            sleep 6;
-        fi
+        copyDatabase
     fi
 
     if [ -r "$source_path" ]
@@ -309,7 +319,7 @@ do
         # Upload to AWS S3 bucket.
         if ! s3cmd info s3://warwick-wendy-allen--photos/$canoncical_name 2>/dev/null
         then
-            cmd="trickle $verbose -u$aws_s3_upload_rate_kBps s3cmd put -P $path_copy s3://warwick-wendy-allen--photos/$canoncical_name"
+            cmd="trickle -s -u$aws_s3_upload_rate_kBps s3cmd put -P $path_copy s3://warwick-wendy-allen--photos/$canoncical_name"
             if [ $verbose ]
             then
                 echo "
