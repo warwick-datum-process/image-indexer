@@ -18,17 +18,22 @@ discovered but have not been processed.  If the queue is empty, a search of the
 directories listed in the "search_dir" table is made for JPEG file, with the
 result being stored in the process queue.  The "search_dir" table has a
 priority column to indicate the order in which the directories should be
-processed.  When the database is created the "search_dir" table is initial
+processed.  When the database is created the "search_dir" table is initially
 populated from a file called "image-indexer-search-directories", which has one
 line per search directory with each line consisting of a priority number, some
-white space then the path of the directory.
+white space then the path of the directory.  These paths should appear to be
+on the localhost (although they can be on a remote host but mounted locally,
+using, for example, the Samba protocol).  The files are copied using rsync
+over SSH so the bandlidth can be limited.  Because of this, please ensure
+passwordless SSH authentication is set up to localhost.
 
 The script then iterates over each JPEG file in the process queue.  It copies
 the file to a local temporary directory, extracts its EXIF data, calulates a
 unique ID of the actual image (with the EXIF tags), copies the file to the
 repository and record the two files containing the image: i.e., the original
 file and the file copied into the repository.  The extracted EXIF tags are also
-stored in the database.
+stored in the database.  Then, it uploads the file to an AWS S3 bucket,
+using trickle to limit the transfer rate.
 
 Send the process a hang-up (1), interrupt (2) or quit (3) signal to request it
 to stop when it has finished process the current file.
@@ -53,7 +58,9 @@ database=$run_dir/image.db
 database_copy=$run_dir/image-read.db
 dd='\([0-9#][0-9#]\)'
 seconds_to_pause_between_each_photo=12
+aws_s3_bucket=warwick-wendy-allen--photos
 aws_s3_upload_rate_kBps=32
+local_network_transfer_rate_kBps=128
 
 
 ##  SIGNAL HANDLING  ##
@@ -183,6 +190,7 @@ function copyDatabase()
 
 ##  SET-UP  ##
 
+if [ $verbose ]; then set -v; set -x; fi
 mkdir -p $tmp_dir
 mkdir -p $run_dir
 cd $run_dir
@@ -250,7 +258,7 @@ do
 
     if [ -r "$source_path" ]
     then
-        cp $verbose "$source_path" $path_copy
+        rsync $verbose --bwlimit=$local_network_transfer_rate_kBps localhost://"$source_path" $path_copy
         cp $path_copy $path_pure
 
         if isVideo
@@ -318,9 +326,9 @@ do
         fi
 
         # Upload to AWS S3 bucket.
-        if ! s3cmd info s3://warwick-wendy-allen--photos/$canoncical_name 2>/dev/null
+        if ! s3cmd info s3://$aws_s3_bucket/$canoncical_name 2>/dev/null
         then
-            cmd="trickle -s -u$aws_s3_upload_rate_kBps s3cmd put -P $path_copy s3://warwick-wendy-allen--photos/$canoncical_name"
+            cmd="trickle -s -u$aws_s3_upload_rate_kBps s3cmd put -P $path_copy s3://$aws_s3_bucket/$canoncical_name"
             if [ $verbose ]
             then
                 echo "
@@ -337,6 +345,7 @@ do
     source_path_sql_escaped=$(sqlEscape "$source_path")
     dbDo "DELETE FROM process_queue WHERE path = '$source_path_sql_escaped';"
 
+    if [ $verbose ]; then set +x; set +v; fi
     stopIfRequested
 
     # Wait to let the network breath.
