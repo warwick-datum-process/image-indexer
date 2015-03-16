@@ -176,6 +176,10 @@ function copyDatabase()
         fi
         backup=$database.$(date +%Y%m%d-%H%M)
         cp $verbose $database_copy $backup
+
+        # Create a slide-show website.
+        system "cd $base__dir && ./image-indexer-create-website.pl";
+
         j=15
     fi
     if [ $verbose ]

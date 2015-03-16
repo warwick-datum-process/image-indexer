@@ -38,8 +38,6 @@ print HTML <<HTML;
         position:absolute;
         left:0; top:0;
         max-width:100%; max-height:100%;
-    }
-    #image-above {
         -webkit-transition: opacity ${fade_seconds}s ease-in-out;
         -moz-transition: opacity ${fade_seconds}s ease-in-out;
         -o-transition: opacity ${fade_seconds}s ease-in-out;
