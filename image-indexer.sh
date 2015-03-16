@@ -236,15 +236,16 @@ j=1
 backup=$database.$(date +%Y%m%d-%H%M)
 while [ ! -z "$source_path" ]
 do
-    if [ $verbose ]
-    then
-        printf "There are %3d photos remaining until the next copy of the write-to database file, ${database}, to the read-from database file, ${database_copy}.\n" $i
-        printf "There are %3d copy events (from ${database} to ${database_copy}) until the next back-up and compress of ${database_copy}.\n" $j
-    fi
     i=$(($i - 1))
     if [[ $i == 0 ]]
     then
         copyDatabase
+    else
+        if [ $verbose ]
+        then
+            printf "There are %3d photos remaining until the next copy of the write-to database file, ${database}, to the read-from database file, ${database_copy}.\n" $i
+            printf "There are %3d copy events (from ${database} to ${database_copy}) until the next back-up and compress of ${database_copy}.\n" $j
+        fi
     fi
 
     if [ -r "$source_path" ]
