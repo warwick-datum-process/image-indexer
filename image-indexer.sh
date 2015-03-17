@@ -59,6 +59,7 @@ database_copy=$run_dir/image-read.db
 dd='\([0-9#][0-9#]\)'
 number_of_photos_between_copying_the_database_file=5
 number_of_database_copys_between_making_a_backup_file=12
+number_of_photos_between_updating_the_website=15
 seconds_to_pause_between_each_photo=12
 aws_s3_bucket=warwick-wendy-allen--photos
 aws_s3_upload_rate_kBps=32
@@ -165,10 +166,21 @@ function isVideo() {
 
 function copyDatabase()
 {
+    i=$(($i - 1))
+    if [[ $i > 0 ]]
+    then
+        if [ $verbose ]
+        then
+            printf "There are %3d photos remaining until the next copy of the write-to database file, ${database}, to the read-from database file, ${database_copy}.\n" $i
+            printf "There are %3d copy events (from ${database} to ${database_copy}) until the next back-up and compress of ${database_copy}.\n" $j
+        fi
+	return
+    fi
+
     cp $verbose $database $database_copy
     i=$number_of_photos_between_copying_the_database_file
     j=$(($j - 1))
-    if [[ $j = 0 ]]
+    if [[ $j == 0 ]]
     then
         if [ $vebose ]
         then
@@ -180,20 +192,33 @@ function copyDatabase()
         fi
         backup=$database.$(date +%Y%m%d-%H%M)
         cp $verbose $database_copy $backup
-
-        # Create a slide-show website.
-        pushd $base_dir
-        perl $verbose image-indexer-create-website.pl
-        popd
-
         j=$number_of_database_copys_between_making_a_backup_file
+    elif [ $verbose ]
+    then
+        printf "There are %3d copy events (from ${database} to ${database_copy}) until the next back-up and compress of ${database_copy}.\n" $j
     fi
+
     if [ $verbose ]
     then
         date
         echo 'SELECT "Queue: ", COUNT(*) FROM process_queue; SELECT "Images:", COUNT(*) FROM image; SELECT "Files: ", COUNT(*) FROM file; SELECT "Tags:  ", COUNT(*) FROM tag;' | sqlite -separator ' | ' $database_copy
         echo
     fi
+}
+
+function updateWebsite()
+{
+    k=$(($k - 1))
+    if [[ $k > 0 ]]
+    then
+        if [ $verbose ]; then echo "The website will be updated after $k more photos have been processed."; fi
+        return
+    fi
+    # Create a slide-show website.
+    pushd $base_dir
+    perl $verbose image-indexer-create-website.pl
+    popd
+    k=$number_of_photos_between_updating_the_website
 }
 
 
@@ -246,24 +271,18 @@ then
     )
 fi
 
+i=1     # Count until next DB copy.
+j=1     # Count until next DB backup.
+k=1     # Count until next website refresh.
+
 # Process each image file.
 source_path=$(dbDo 'SELECT path FROM process_queue LIMIT 1;')
-i=1
-j=1
+backup=$database.$(date +%Y%m%d-%H%M)
 backup=$database.$(date +%Y%m%d-%H%M)
 while [ ! -z "$source_path" ]
 do
-    i=$(($i - 1))
-    if [[ $i == 0 ]]
-    then
-        copyDatabase
-    else
-        if [ $verbose ]
-        then
-            printf "There are %3d photos remaining until the next copy of the write-to database file, ${database}, to the read-from database file, ${database_copy}.\n" $i
-            printf "There are %3d copy events (from ${database} to ${database_copy}) until the next back-up and compress of ${database_copy}.\n" $j
-        fi
-    fi
+    copyDatabase
+    updateWebsite
 
     if [ -r "$source_path" ]
     then
