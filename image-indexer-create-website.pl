@@ -60,14 +60,19 @@ print HTML <<HTML;
     var below = document.getElementById("image-below");
     var above = document.getElementById("image-above");
     function setImage() {
-        above.className = "transparent";
+      above.className = "transparent";
+      setTimeout(function() {
+        above.src = encodeURIComponent(files[Math.round(Math.random() * $#files)]);
         setTimeout(function() {
-            above.src = encodeURIComponent(files[Math.round(Math.random() * $#files)]);
-            setTimeout(function() {
-                above.className = "";
-                setTimeout(function() {below.src = above.src; eval("setImage()")}, ${fade_seconds}000);
-            }, ${display_seconds}000 - 2*${fade_seconds}000);
-        }, ${fade_seconds}000);
+          above.className = "";
+          below.className = "transparent";
+          setTimeout(function() {
+            below.src = above.src;
+            below.className = "";
+            eval("setImage()");
+          }, ${fade_seconds}000);
+        }, ${display_seconds}000 - 2*${fade_seconds}000);
+      }, ${fade_seconds}000);
     }
     setImage();
   </script>
