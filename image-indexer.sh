@@ -89,7 +89,9 @@ function stopIfRequested()
     if [ ! -z "$stop_msg" ]
     then
         echo "Stopping in response to a SIGHUP or SIGINT."
+        j=1
         copyDatabase
+        echo "Stopping at $(date)."
         exit 0
     fi
 }
@@ -178,7 +180,9 @@ function copyDatabase()
         cp $verbose $database_copy $backup
 
         # Create a slide-show website.
-        system "cd $base__dir && ./image-indexer-create-website.pl";
+        pushd $base_dir
+        perl image-indexer-create-website.pl
+        popd
 
         j=15
     fi
