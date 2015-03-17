@@ -1,5 +1,6 @@
-#!/usr/bin/perl -wl
+#!/usr/bin/perl
 
+use warnings;
 use strict;
 use utf8;
 
@@ -29,6 +30,8 @@ open HTML, '>run/index.html' or die $!;
 print HTML <<HTML;
 <html>
 <head>
+  <meta http-equiv="cache-control" content="max-age=5400">
+  <meta http-equiv="refresh" content="6000">
   <script language="JavaScript1.1">
   <!--
   //-->
@@ -70,5 +73,17 @@ print HTML <<HTML;
 HTML
 close HTML;
 
-system "trickle -s -u128 s3cmd put -P loading.png s3://$bucket/loading.png" or warn $!;
-system "trickle -s -u128 s3cmd put -P run/index.html s3://$bucket/index.html" or warn $!;
+sub sys_do
+{
+    print join " ", @_, "\n";
+    system @_ or warn $!;
+}
+
+sys_do "trickle -s -u128 s3cmd put -P loading.png s3://$bucket/loading.png";
+sys_do "trickle -s -u128 s3cmd put -P run/index.html s3://$bucket/index.html";
+
+# Finally, create or update a random image.
+my $random_file = '';
+$random_file = $files[int rand $#files] until $random_file =~ /\.jpg$/;
+# $random_file =~ s/([^\w\.\-])/sprintf '%%%02d', unpack('H*',$1)/eg;
+sys_do "s3cmd cp -P s3://$bucket/$random_file s3://$bucket/random.jpg";
