@@ -41,24 +41,37 @@ print HTML <<HTML;
   </script>
   <style>
     img {
-        position:absolute;
-        left:0; top:0;
-        max-width:100%; max-height:100%;
-        -webkit-transition: opacity ${fade_seconds}s ease-in-out;
-        -moz-transition: opacity ${fade_seconds}s ease-in-out;
-        -o-transition: opacity ${fade_seconds}s ease-in-out;
-        transition: opacity ${fade_seconds}s ease-in-out;
+      position:absolute;
+      left:0; top:0;
+      max-width:100%; max-height:100%;
+      -webkit-transition: opacity ${fade_seconds}s ease-in-out;
+      -moz-transition: opacity ${fade_seconds}s ease-in-out;
+      -o-transition: opacity ${fade_seconds}s ease-in-out;
+      transition: opacity ${fade_seconds}s ease-in-out;
     }
     .transparent { opacity:0 }
+    div.settings {
+      position:absolute;
+      z-index:3;
+      width:450px; height:225px;
+      right:455px; top:5px;
+      padding:2px;
+      border:1px solid black;
+      background-color:#114; color:#8AA;
+    }
   </style>
 </head>
 <body>
   <img id="image-below" src="loading.png">
   <img id="image-above">
+  <div id="settings">
+    <img id="thumbnail">
+  </div>
   <script>
     var files = ['@files'];
     var below = document.getElementById("image-below");
     var above = document.getElementById("image-above");
+    var thumb = document.getElementById("thumbnail");
     function setImage() {
       above.className = "transparent";
       setTimeout(function() {
@@ -66,6 +79,7 @@ print HTML <<HTML;
         setTimeout(function() {
           above.className = "";
           below.className = "transparent";
+          thumb.src = above.src;
           setTimeout(function() {
             below.src = above.src;
             below.className = "";
