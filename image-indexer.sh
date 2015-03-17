@@ -61,6 +61,7 @@ number_of_photos_between_copying_the_database_file=5
 number_of_database_copys_between_making_a_backup_file=12
 number_of_photos_between_updating_the_website=15
 seconds_to_pause_between_each_photo=12
+select_next_path_from_top_n_paths=1000
 aws_s3_bucket=warwick-wendy-allen--photos
 aws_s3_upload_rate_kBps=32
 local_network_transfer_rate_kBps=128
@@ -276,7 +277,7 @@ j=1     # Count until next DB backup.
 k=1     # Count until next website refresh.
 
 # Process each image file.
-source_path=$(dbDo 'SELECT path FROM process_queue LIMIT 1;')
+source_path=$(dbDo "SELECT path FROM process_queue LIMIT $select_next_path_from_top_n_paths;" | sort --random-sort | head -1)
 backup=$database.$(date +%Y%m%d-%H%M)
 backup=$database.$(date +%Y%m%d-%H%M)
 while [ ! -z "$source_path" ]
