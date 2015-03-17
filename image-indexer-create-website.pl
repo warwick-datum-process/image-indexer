@@ -4,6 +4,8 @@ use warnings;
 use strict;
 use utf8;
 
+our $verbose = $ARGV[0] =~ /^-(?:v:-verbose)$/ and shift @ARGV;
+
 my $bucket = 'warwick-wendy-allen--photos';
 my $display_seconds = 75;
 my $fade_seconds = 5;
@@ -20,6 +22,7 @@ my @files;
 open LS, "run/$bucket.ls" or die $!;
 while (<LS>)
 {
+    # Only consider JPEG files that match the expected file name format.
     m<(\d{4}-\d\d-\d\d \d\d:\d\d)\s+(\d+)\s+s3://$bucket/(.*\.jpg)> or print(STDERR), next;
     push @files, $3 if $2 > 10000;
 }
@@ -75,7 +78,7 @@ close HTML;
 
 sub sys_do
 {
-    print join " ", @_, "\n";
+    print join " ", @_, "\n" if our $verbose;
     system @_ or warn $!;
 }
 

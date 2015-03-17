@@ -57,6 +57,8 @@ path_pure=$tmp_dir/$$.pure
 database=$run_dir/image.db
 database_copy=$run_dir/image-read.db
 dd='\([0-9#][0-9#]\)'
+number_of_photos_between_copying_the_database_file=5
+number_of_database_copys_between_making_a_backup_file=12
 seconds_to_pause_between_each_photo=12
 aws_s3_bucket=warwick-wendy-allen--photos
 aws_s3_upload_rate_kBps=32
@@ -164,7 +166,7 @@ function isVideo() {
 function copyDatabase()
 {
     cp $verbose $database $database_copy
-    i=5
+    i=$number_of_photos_between_copying_the_database_file
     j=$(($j - 1))
     if [[ $j = 0 ]]
     then
@@ -181,17 +183,16 @@ function copyDatabase()
 
         # Create a slide-show website.
         pushd $base_dir
-        perl image-indexer-create-website.pl
+        perl $verbose image-indexer-create-website.pl
         popd
 
-        j=15
+        j=$number_of_database_copys_between_making_a_backup_file
     fi
     if [ $verbose ]
     then
         date
         echo 'SELECT "Queue: ", COUNT(*) FROM process_queue; SELECT "Images:", COUNT(*) FROM image; SELECT "Files: ", COUNT(*) FROM file; SELECT "Tags:  ", COUNT(*) FROM tag;' | sqlite -separator ' | ' $database_copy
-        echo 'SELECT * FROM process_queue LIMIT 2;' | sqlite $database_copy
-        sleep 6;
+        echo
     fi
 }
 
