@@ -216,7 +216,7 @@ function updateWebsite()
     fi
     # Create a slide-show website.
     pushd $base_dir
-    perl $verbose image-indexer-create-website.pl
+    perl image-indexer-create-website.pl $verbose
     popd
     k=$number_of_photos_between_updating_the_website
 }

@@ -74,6 +74,7 @@ print HTML <<HTML;
     var thumb = document.getElementById("thumbnail");
     function setImage() {
       above.className = "transparent";
+      below.className = "";
       setTimeout(function() {
         above.src = encodeURIComponent(files[Math.round(Math.random() * $#files)]);
         setTimeout(function() {
@@ -82,7 +83,6 @@ print HTML <<HTML;
           thumb.src = above.src;
           setTimeout(function() {
             below.src = above.src;
-            below.className = "";
             eval("setImage()");
           }, ${fade_seconds}000);
         }, ${display_seconds}000 - 2*${fade_seconds}000);
