@@ -291,7 +291,7 @@ do
 
     if [ -r "$source_path" ]
     then
-        rsync $verbose --bwlimit=$local_network_transfer_rate_kBps localhost://"$source_path" $path_copy
+        rsync $verbose --bwlimit=$local_network_transfer_rate_kBps localhost://"$source_path" "$path_copy"
         cp $path_copy $path_pure
 
         if isVideo
@@ -354,14 +354,14 @@ do
             touch --reference="$source_path" $path_copy
             mkdir -p $verbose $dst_dir/$year_month
             destination_path=$dst_dir/$year_month/$canoncical_name
-            rsync -a $dryrun $verbose $path_copy $destination_path
+            rsync -a $dryrun $verbose "$path_copy" "$destination_path"
             dbInsertFileAndTag "$destination_path"
         fi
 
         # Upload to AWS S3 bucket.
         if ! s3cmd info s3://$aws_s3_bucket/$canoncical_name 2>/dev/null
         then
-            cmd="trickle -s -u$aws_s3_upload_rate_kBps s3cmd put -P $path_copy s3://$aws_s3_bucket/$canoncical_name"
+            cmd="trickle -s -u$aws_s3_upload_rate_kBps s3cmd put -P '$path_copy' s3://$aws_s3_bucket/$canoncical_name"
             if [ $verbose ]
             then
                 echo "
