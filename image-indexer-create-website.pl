@@ -27,6 +27,7 @@ while (<LS>)
     push @files, $3 if $2 > 10000;
 }
 close LS;
+die "No JPG files were found in the AWS S3 bucket '$bucket'." unless @files;
 
 $" = "',\n        '";
 open HTML, '>run/index.html' or die $!;
@@ -106,6 +107,12 @@ sys_do "trickle -s -u128 s3cmd put -P run/index.html s3://$bucket/index.html";
 
 # Finally, create or update a random image.
 my $random_file = '';
-$random_file = $files[int rand $#files] until $random_file =~ /\.jpg$/;
+my $attempts_to_find_a_random_file = 0;
+until ($random_file =~ /\.jpg$/)
+{
+    die "Cannot find a random JPEG file in the list of ".@files." files downloaded from the AWS S3 bucket, '$bucket'." if $attempts_to_find_a_random_file++ > 100;
+    $random_file = $files[int rand $#files];
+    print "Random file = '$random_file'.\n" if $verbose;
+}
 # $random_file =~ s/([^\w\.\-])/sprintf '%%%02d', unpack('H*',$1)/eg;
 sys_do "s3cmd cp -P s3://$bucket/$random_file s3://$bucket/random.jpg";
