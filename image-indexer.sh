@@ -375,7 +375,7 @@ do
             fi
         fi
     fi
-    source_path_sql_escaped=$(sqlEscape "'$source_path'")
+    source_path_sql_escaped=$(sqlEscape "$source_path")
     dbDo "DELETE FROM process_queue WHERE path = '$source_path_sql_escaped';"
 
     if [ $verbose ]; then set +x; set +v; fi
