@@ -344,7 +344,7 @@ do
             INSERT INTO image (imageId, digest, type, compressedSize) VALUES (NULL, '$digest', $image_type, $compressed_size);
         ")
         image_id=$(dbDo "SELECT imageId FROM image WHERE digest='$digest';")
-        dbInsertFileAndTag "'$source_path'"
+        dbInsertFileAndTag "$source_path"
 
         canoncical_name=$year_month.$day_time.$digest.$compressed_size_base64.$file_extn
 
@@ -355,7 +355,7 @@ do
             mkdir -p $verbose $dst_dir/$year_month
             destination_path=$dst_dir/$year_month/$canoncical_name
             rsync -a $dryrun $verbose "$path_copy" "$destination_path"
-            dbInsertFileAndTag "'$destination_path'"
+            dbInsertFileAndTag "$destination_path"
         fi
 
         # Upload to AWS S3 bucket.
