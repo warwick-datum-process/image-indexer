@@ -291,7 +291,7 @@ do
 
     if [ -r "$source_path" ]
     then
-        rsync $verbose --bwlimit=$local_network_transfer_rate_kBps localhost://"$source_path" "$path_copy"
+        rsync $verbose --bwlimit=$local_network_transfer_rate_kBps localhost://"'$source_path'" "$path_copy"
         cp $path_copy $path_pure
 
         if isVideo
@@ -320,7 +320,7 @@ do
             jhead -purejpg $path_pure >/dev/null
 
             comment=$(awk '/^Exif\.Photo\.UserComment / {for (i=2; i<=NF; i++) print $i}' <$meta)
-            path_components=$(perl -we '$_ = shift; s/\.jpe?g$//i; @pc = split "/"; print join "; ", grep defined, @pc[$#pc-2 .. $#pc]' "$source_path")
+            path_components=$(perl -we '$_ = shift; s/\.jpe?g$//i; @pc = split "/"; print join "; ", grep defined, @pc[$#pc-2 .. $#pc]' "'$source_path'")
             exiv2 -M"set Exif.Photo.UserComment $path_components" $path_copy
 
             height=$( awk '/^Exif\.Photo\.PixelXDimension / {printf "%06d", $2}' <$meta)
@@ -344,18 +344,18 @@ do
             INSERT INTO image (imageId, digest, type, compressedSize) VALUES (NULL, '$digest', $image_type, $compressed_size);
         ")
         image_id=$(dbDo "SELECT imageId FROM image WHERE digest='$digest';")
-        dbInsertFileAndTag "$source_path"
+        dbInsertFileAndTag "'$source_path'"
 
         canoncical_name=$year_month.$day_time.$digest.$compressed_size_base64.$file_extn
 
         # Copy to local repository.
         if $copy_to_local_repo
         then
-            touch --reference="$source_path" $path_copy
+            touch --reference="'$source_path'" $path_copy
             mkdir -p $verbose $dst_dir/$year_month
             destination_path=$dst_dir/$year_month/$canoncical_name
             rsync -a $dryrun $verbose "$path_copy" "$destination_path"
-            dbInsertFileAndTag "$destination_path"
+            dbInsertFileAndTag "'$destination_path'"
         fi
 
         # Upload to AWS S3 bucket.
@@ -375,7 +375,7 @@ do
             fi
         fi
     fi
-    source_path_sql_escaped=$(sqlEscape "$source_path")
+    source_path_sql_escaped=$(sqlEscape "'$source_path'")
     dbDo "DELETE FROM process_queue WHERE path = '$source_path_sql_escaped';"
 
     if [ $verbose ]; then set +x; set +v; fi
