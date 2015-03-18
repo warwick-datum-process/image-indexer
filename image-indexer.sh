@@ -135,6 +135,11 @@ function dbDo()
     fi
 }
 
+function getNextSourcePath()
+{
+    dbDo "SELECT path FROM process_queue LIMIT $select_next_path_from_top_n_paths;" | sort --random-sort | head -1
+}
+
 function dbInsertFileAndTag()
 {
     path="$1"
@@ -277,8 +282,7 @@ j=1     # Count until next DB backup.
 k=1     # Count until next website refresh.
 
 # Process each image file.
-source_path=$(dbDo "SELECT path FROM process_queue LIMIT $select_next_path_from_top_n_paths;" | sort --random-sort | head -1)
-backup=$database.$(date +%Y%m%d-%H%M)
+source_path=$(getNextSourcePath)
 backup=$database.$(date +%Y%m%d-%H%M)
 while [ ! -z "$source_path" ]
 do
@@ -389,5 +393,5 @@ do
     done
     if [ $verbose ]; then printf "\b\b\b waited $seconds_to_pause_between_each_photo seconds.\n\n"; fi
 
-    source_path=$(dbDo 'SELECT path FROM process_queue LIMIT 1;')
+    source_path=$(getNextSourcePath)
 done
