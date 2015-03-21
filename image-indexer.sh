@@ -170,7 +170,7 @@ function dbInsertFileAndTag()
 }
 
 function isVideo() {
-     [[ "$source_path" =~ \.[Mm][Oo][Vv]$ ]]
+     [[ "$source_path" =~ \.[Mm]([Oo][Vv]|[Pp]4)$ ]]
 }
 
 function copyDatabase()
@@ -303,9 +303,9 @@ do
         fi
         cp $path_copy $path_pure
 
+        file_extn=$(echo -n "$source_path" | tail -c3 | tr [A-Z] [a-z])
         if isVideo
         then
-            file_extn=mov
             avconv -i $path_copy showinfo 2>&1 | \
             perl -nwle '
                 BEGIN {our $stream = q{}}
@@ -324,7 +324,6 @@ do
 
             date=$(awk '/creation_time / {print $2" "$3 }' <$meta | head -1 | sed s/-/:/g)
         else
-            file_extn=jpg
             exiv2 -Pkt $path_copy | sed -e's/\\/\\\\/g' -e"s/'/''/g" >$meta
             jhead -purejpg $path_pure >/dev/null
 
