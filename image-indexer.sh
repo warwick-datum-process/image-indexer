@@ -64,7 +64,7 @@ seconds_to_pause_between_each_photo=12
 select_next_path_from_top_n_paths=1000
 aws_s3_bucket=warwick-wendy-allen--photos
 aws_s3_upload_rate_kBps=32
-local_network_transfer_rate_kBps=128
+local_network_transfer_rate_kBps=96
 
 
 ##  SIGNAL HANDLING  ##
@@ -93,8 +93,11 @@ function stopIfRequested()
     if [ ! -z "$stop_msg" ]
     then
         echo "Stopping in response to a SIGHUP or SIGINT."
-        j=1
+        i=1     # Count until next DB copy.
+        j=1     # Count until next DB backup.
+        k=1     # Count until next website refresh.
         copyDatabase
+        updateWebsite
         echo "Stopping at $(date)."
         exit 0
     fi
@@ -291,7 +294,13 @@ do
 
     if [ -r "$source_path" ]
     then
-        rsync $verbose --bwlimit=$local_network_transfer_rate_kBps localhost://"'$source_path'" "$path_copy"
+        if [ $verbose ]; then printf "\nCopying '$source_path' to '$path_copy' at $local_network_transfer_rate_kBps kBps.\n"; fi
+        if [ $verbose ]
+        then
+            rsync -vv --progress --bwlimit=$local_network_transfer_rate_kBps localhost://"'$source_path'" "$path_copy"
+        else
+            rsync --bwlimit=$local_network_transfer_rate_kBps localhost://"'$source_path'" "$path_copy"
+        fi
         cp $path_copy $path_pure
 
         if isVideo
@@ -313,7 +322,7 @@ do
                     printf q{%-45s %s}.chr(10), $stream.$+{key}, $+{val};
                 }' >$meta
 
-            date=$(awk '/creation_time / {print $2" "$3 }' <$meta | sed s/-/:/g)
+            date=$(awk '/creation_time / {print $2" "$3 }' <$meta | head -1 | sed s/-/:/g)
         else
             file_extn=jpg
             exiv2 -Pkt $path_copy | sed -e's/\\/\\\\/g' -e"s/'/''/g" >$meta
@@ -354,7 +363,12 @@ do
             touch --reference="'$source_path'" $path_copy
             mkdir -p $verbose $dst_dir/$year_month
             destination_path=$dst_dir/$year_month/$canoncical_name
-            rsync -a $dryrun $verbose "$path_copy" "$destination_path"
+            if [ $verbose ]
+            then
+                rsync -avv --progress $dryrun "$path_copy" "$destination_path"
+            else
+                rsync -a $dryrun "$path_copy" "$destination_path"
+            fi
             dbInsertFileAndTag "$destination_path"
         fi
 
