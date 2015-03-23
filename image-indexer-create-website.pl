@@ -50,6 +50,8 @@ print HTML <<HTML;
     #images img {
       position:absolute;
       left:0; top:0;
+    }
+    #image-above {
       -webkit-transition: opacity ${fade_seconds}s ease-in-out;
       -moz-transition: opacity ${fade_seconds}s ease-in-out;
       -o-transition: opacity ${fade_seconds}s ease-in-out;
@@ -82,8 +84,8 @@ print HTML <<HTML;
 </head>
 <body>
   <div id="images">
-    <img id="image-below" src="loading.png">
-    <img id="image-above">
+    <img id="image-below">
+    <img id="image-above" src="loading.png">
   </div>
   <div id="settings-outer" onmouseover="this.className='visible'" onmouseout="this.className=''">
   <div id="settings">
@@ -102,16 +104,18 @@ print HTML <<HTML;
     var above = document.getElementById("image-above");
     var thumb = document.getElementById("thumbnail");
     function setImage() {
+      // The top image is visible.
+      below.src = above.src;
       above.className = "transparent";
-      below.className = "";
       setTimeout(function() {
+        // The top has just finished becoming transparent.
         above.src = encodeURIComponent(files[Math.round(Math.random() * $#files)]);
         setTimeout(function() {
+          // Finished loading the new image into the transparent top image (and waiting to give time to view the bottom image).
           above.className = "";
-          below.className = "transparent";
           thumb.src = above.src;
           setTimeout(function() {
-            below.src = above.src;
+            // The top has just finished becoming visible.
             eval("setImage()");
           }, ${fade_seconds}000);
         }, ${display_seconds}000 - 2*${fade_seconds}000);
