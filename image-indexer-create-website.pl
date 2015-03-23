@@ -36,37 +36,65 @@ print HTML <<HTML;
 <head>
   <meta http-equiv="cache-control" content="max-age=5400">
   <meta http-equiv="refresh" content="6000">
-  <script language="JavaScript1.1">
-  <!--
-  //-->
-  </script>
   <style>
     img {
+      max-width:100%; max-height:100%;
+    }
+    .transparent { opacity:0 }
+    #images {
+      position:absolute;
+      z-index:1;
+      width:100%; height:100%;
+      left:0; top:0;
+    }
+    #images img {
       position:absolute;
       left:0; top:0;
-      max-width:100%; max-height:100%;
       -webkit-transition: opacity ${fade_seconds}s ease-in-out;
       -moz-transition: opacity ${fade_seconds}s ease-in-out;
       -o-transition: opacity ${fade_seconds}s ease-in-out;
       transition: opacity ${fade_seconds}s ease-in-out;
     }
-    .transparent { opacity:0 }
-    div.settings {
+    #settings-outer {
       position:absolute;
       z-index:3;
-      width:450px; height:225px;
-      right:455px; top:5px;
-      padding:2px;
-      border:1px solid black;
-      background-color:#114; color:#8AA;
+      width:5px;
+      top:0; right:0;
+      overflow:hidden;
+      -webkit-transition:all 1.0s ease-in-out;
+      -moz-transition:all 1.0s ease-in-out;
+      -o-transition:all 1.0s ease-in-out;
+      transition:all 1.0s ease-in-out;
+    }
+    #settings-outer.visible {
+      width:85px;
+    }
+    #settings {
+      width:80px;
+      margin:0 5px;
+    }
+    button {
+      padding:3px;
+      margin:12px 3px 3px;
+      border-radius:8px;
     }
   </style>
 </head>
 <body>
-  <img id="image-below" src="loading.png">
-  <img id="image-above">
+  <div id="images">
+    <img id="image-below" src="loading.png">
+    <img id="image-above">
+  </div>
+  <div id="settings-outer" onmouseover="this.className='visible'" onmouseout="this.className=''">
   <div id="settings">
     <img id="thumbnail">
+    <form name="image-adjust" action="http://ubuntu-acer/image-indexer/image-adjust.pl">
+      <button type"button" value="hide">Hide this image</hide>
+      <button type"button" value="hide">Rotate clockwise</hide>
+      <button type"button" value="hide">Rotate anti-clockwise</hide>
+      <button type"button" value="hide">Rotate 180 degrees</hide>
+    </form>
+  </div>
   </div>
   <script>
     var files = ['@files'];
