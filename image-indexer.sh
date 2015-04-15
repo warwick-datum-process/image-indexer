@@ -47,6 +47,7 @@ fi
 verbose=-v
 dryrun= #--dry-run
 copy_to_local_repo=false
+copy_to_remote_repo=true
 base_dir=$HOME/image-indexer
 run_dir=$base_dir/run
 dst_dir=$run_dir/images
@@ -372,20 +373,23 @@ do
         fi
 
         # Upload to AWS S3 bucket.
-        if ! s3cmd info s3://$aws_s3_bucket/$canoncical_name 2>/dev/null
+        if $copy_to_remote_repo
         then
-            cmd="trickle -s -u$aws_s3_upload_rate_kBps s3cmd put -P '$path_copy' s3://$aws_s3_bucket/$canoncical_name"
-            if [ $verbose ]
-            then
-                echo "
+          if ! s3cmd info s3://$aws_s3_bucket/$canoncical_name 2>/dev/null
+          then
+              cmd="trickle -s -u$aws_s3_upload_rate_kBps s3cmd put -P '$path_copy' s3://$aws_s3_bucket/$canoncical_name"
+              if [ $verbose ]
+              then
+                  echo "
     Uploading to the AWS S3 bucket:
-        $cmd"
-            fi
-            if [ "$dryrun" != "--dry-run" ]
-            then
-                $cmd
-                echo
-            fi
+          $cmd"
+              fi
+              if [ "$dryrun" != "--dry-run" ]
+              then
+                  $cmd
+                  echo
+              fi
+          fi
         fi
     fi
     source_path_sql_escaped=$(sqlEscape "$source_path")
